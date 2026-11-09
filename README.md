@@ -1,0 +1,2 @@
+# logiccore
+O GRANDE ASSALTO LOGICO
