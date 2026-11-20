@@ -19,6 +19,7 @@ typedef enum {
 
 static GameState game;
 static GameMode mode;
+static Texture2D doorClosed;
 
 static Rectangle vault = {900, 350, 100, 220};
 
@@ -96,6 +97,9 @@ void Game_Init(void)
     mode = MODE_EXPLORATION;
     showMessage = false;
     vaultUnlocked = false;
+
+    Room_Init();
+    doorClosed = LoadTexture("assets/backgrounds/portafechada.png");
 
     Player_Init(&game.player, (Vector2){100, 442});
 }
@@ -188,34 +192,43 @@ void Game_Update(float dt)
 void Game_Draw(void)
 {
     if (mode == MODE_CIPHER) {
-        Room_Draw();
+        Room_Draw(game.currentRoom);
         Cipher_Draw();
         return;
     }
 
     if (mode == MODE_DOODLE) {
-        Room_Draw();
+        Room_Draw(game.currentRoom);
         Doodle_Draw();
         return;
     }
 
     if (mode == MODE_TERMINAL) {
-        Room_Draw();
+        Room_Draw(game.currentRoom);
         Terminal_Draw();
         return;
     }
 
-    Room_Draw();
+    Room_Draw(game.currentRoom);
 
-    Color vaultColor = vaultUnlocked ? GREEN : SKYBLUE;
+    if (doorClosed.id != 0)
+    {
+        float scale = 300.0f / doorClosed.height;
 
-    DrawRectangleRec(vault, vaultColor);
-    DrawRectangleLinesEx(vault, 3, WHITE);
+        float doorWidth = doorClosed.width * scale;
+        float doorHeight = doorClosed.height * scale;
 
-    DrawText(
-        vaultUnlocked ? "ABERTO" : "COFRE",
-        915, 450, 20, WHITE
-    );
+        DrawTextureEx(
+            doorClosed,
+            (Vector2){
+                vault.x + (vault.width - doorWidth) / 2 - 24,
+                vault.y + vault.height - doorHeight
+            },
+            0.0f,
+            scale,
+            WHITE
+        );
+    }
 
     Player_Draw(&game.player);
 
@@ -254,4 +267,10 @@ void Game_Unload(void)
 {
     UnloadCurrentMinigame();
     Player_Unload(&game.player);
+    Room_Unload();
+
+    if (doorClosed.id != 0)
+    {
+        UnloadTexture(doorClosed);
+    }
 }

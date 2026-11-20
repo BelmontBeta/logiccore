@@ -1,36 +1,62 @@
-
 #include "room.h"
+
+#define TOTAL_ROOMS 3
+
+static Texture2D backgrounds[TOTAL_ROOMS];
+static bool backgroundsLoaded = false;
+
+void Room_Init(void)
+{
+    backgrounds[0] = LoadTexture("assets/backgrounds/room1.png");
+    backgrounds[1] = LoadTexture("assets/backgrounds/room2.png");
+    backgrounds[2] = LoadTexture("assets/backgrounds/room3.png");
+
+    backgroundsLoaded = true;
+}
+
+void Room_Unload(void)
+{
+    if (!backgroundsLoaded)
+        return;
+
+    for (int i = 0; i < TOTAL_ROOMS; i++)
+    {
+        if (backgrounds[i].id != 0)
+            UnloadTexture(backgrounds[i]);
+    }
+
+    backgroundsLoaded = false;
+}
 
 Rectangle Room_GetBounds(void)
 {
-    // Área horizontal onde BIT pode caminhar
     return (Rectangle){70, 570, 960, 50};
 }
 
-void Room_Draw(void)
+void Room_Draw(int roomNumber)
 {
-    // Fundo da sala
     ClearBackground((Color){18, 22, 32, 255});
 
-    // Parede do fundo
-    DrawRectangle(50, 80, 1000, 490, (Color){30, 38, 52, 255});
+    if (!backgroundsLoaded ||
+        roomNumber < 1 ||
+        roomNumber > TOTAL_ROOMS)
+        return;
 
-    // Linha superior da parede
-    DrawRectangle(50, 80, 1000, 8, DARKGRAY);
+    Texture2D background = backgrounds[roomNumber - 1];
 
-    // Chão
-    DrawRectangle(50, 570, 1000, 50, (Color){65, 72, 85, 255});
+    if (background.id == 0)
+        return;
 
-    // Linha do chão
-    DrawRectangle(50, 570, 1000, 4, LIGHTGRAY);
-
-    // Porta de saída
-    DrawRectangle(900, 350, 100, 220, (Color){20, 100, 120, 255});
-    DrawRectangleLines(900, 350, 100, 220, SKYBLUE);
-
-    // Identificação da porta
-    DrawText("SAIDA", 922, 450, 20, WHITE);
-
-    // Identificação da empresa
-    DrawText("NEXORA INDUSTRIES", 75, 105, 20, LIGHTGRAY);
+    DrawTexturePro(
+        background,
+        (Rectangle){
+            0, 0,
+            (float)background.width,
+            (float)background.height
+        },
+        (Rectangle){0, 0, 1100, 760},
+        (Vector2){0, 0},
+        0.0f,
+        WHITE
+    );
 }
