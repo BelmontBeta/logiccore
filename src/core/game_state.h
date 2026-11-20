@@ -11,6 +11,16 @@ typedef struct {
     Vector2 size;
     float speed;
     Color color;
+
+    // Sprites do BIT
+    Texture2D idleFrames[2];
+    Texture2D walkFrames[3];
+
+    // Controle da animação
+    int currentFrame;
+    float animationTimer;
+    bool moving;
+    bool facingLeft;
 } Player;
 
 // Estado geral da campanha

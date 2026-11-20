@@ -97,7 +97,7 @@ void Game_Init(void)
     showMessage = false;
     vaultUnlocked = false;
 
-    Player_Init(&game.player, (Vector2){100, 520});
+    Player_Init(&game.player, (Vector2){100, 442});
 }
 
 void Game_Update(float dt)
@@ -253,4 +253,5 @@ void Game_Draw(void)
 void Game_Unload(void)
 {
     UnloadCurrentMinigame();
+    Player_Unload(&game.player);
 }
