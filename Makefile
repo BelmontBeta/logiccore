@@ -9,6 +9,8 @@ SRC = src/main.c \
       src/core/game.c \
       src/systems/player.c \
       src/scenes/room.c \
+      src/scenes/menu.c \
+      src/scenes/memory.c \
       src/minigames/cipher/cipher.c \
       src/minigames/doodle/doodle.c \
       src/minigames/terminal/terminal.c

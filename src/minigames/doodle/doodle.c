@@ -306,6 +306,18 @@ static void ReportFailure(const char *message)
 {
     errors++;
 
+    if (campaignLives != NULL) {
+        *campaignLives -= 20;
+
+        if (*campaignLives < 0)
+            *campaignLives = 0;
+
+        if (*campaignLives <= 0) {
+            result = DOODLE_GAME_OVER;
+            return;
+        }
+    }
+
     if (errors >= 3 && !hintOn) {
         hintOn = true;
 
@@ -848,7 +860,10 @@ DoodleResult Doodle_Update(float dt)
     if (timeLeft <= 0.0f) {
         timeLeft = 0.0f;
 
-        (*campaignLives)--;
+        (*campaignLives) -= 20;
+
+        if (*campaignLives < 0)
+            *campaignLives = 0;
 
         if (*campaignLives <= 0) {
             result = DOODLE_GAME_OVER;
@@ -859,7 +874,7 @@ DoodleResult Doodle_Update(float dt)
 
         SetStatus(
             "TEMPO ESGOTADO",
-            "Voce perdeu uma vida. Tente novamente esta fase.",
+            "Bateria reduzida em 20%. Tente novamente esta fase.",
             RED
         );
 

@@ -235,14 +235,18 @@ static void ChooseRule(int selectedRule)
         }
     }
     else {
-        (*campaignLives)--;
+        (*campaignLives) -= 20;
+
+        if (*campaignLives < 0)
+            *campaignLives = 0;
+
         errorsThisStep++;
 
         if (*campaignLives <= 0) {
-            *campaignLives = 0;
             gameOver = true;
-            SetMessage("Voce ficou sem vidas.");
+            SetMessage("Bateria do BIT esgotada.");
         }
+
         else if (errorsThisStep >= ERRORS_FOR_HINT) {
             snprintf(
                 message,
@@ -252,7 +256,7 @@ static void ChooseRule(int selectedRule)
             );
         }
         else {
-            SetMessage("Resposta incorreta. Voce perdeu uma vida.");
+            SetMessage("Resposta incorreta. Bateria reduzida em 20%.");
         }
     }
 }

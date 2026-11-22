@@ -3,17 +3,29 @@
 
 #include "../systems/player.h"
 #include "../scenes/room.h"
+#include "../scenes/menu.h"
+#include "../scenes/memory.h"
 
 #include "../minigames/cipher/cipher.h"
 #include "../minigames/doodle/doodle.h"
 #include "../minigames/terminal/terminal.h"
 
 typedef enum {
+    MODE_MENU,
+    MODE_MEMORY,
     MODE_EXPLORATION,
     MODE_CIPHER,
     MODE_DOODLE,
     MODE_TERMINAL
 } GameMode;
+
+typedef enum {
+    AFTER_INTRO,
+    AFTER_ROOM1,
+    AFTER_ROOM2,
+    AFTER_DISCOVERY,
+    AFTER_ENDING
+} MemoryNextAction;
 
 #define TOTAL_ROOMS 3
 
@@ -23,12 +35,68 @@ static Texture2D doorClosed;
 
 static Rectangle vault = {900, 350, 100, 220};
 
+static Rectangle energyPickup = {535, 500, 30, 42};
+static Rectangle energyPickupRoom3 = {700, 600, 30, 42};
+
+static bool energyCollected;
 static bool showMessage;
 static bool vaultUnlocked;
+static bool campaignCompleted;
+
+static MemoryNextAction memoryNextAction;
+
+static void StartMemory(
+    MemorySequence sequence,
+    MemoryNextAction nextAction
+)
+{
+    Memory_Start(sequence);
+    memoryNextAction = nextAction;
+    mode = MODE_MEMORY;
+}
+
+static void ContinueAfterMemory(void)
+{
+    switch (memoryNextAction) {
+
+        case AFTER_INTRO:
+            mode = MODE_EXPLORATION;
+            break;
+
+        case AFTER_ROOM1:
+            mode = MODE_EXPLORATION;
+            break;
+
+        case AFTER_ROOM2:
+            mode = MODE_EXPLORATION;
+            break;
+
+        case AFTER_DISCOVERY:
+            StartMemory(
+                MEMORY_ENDING,
+                AFTER_ENDING
+            );
+            break;
+
+        case AFTER_ENDING:
+            campaignCompleted = true;
+            game.currentRoom = 1;
+            game.lives = 100;
+            game.player.position = (Vector2){100, 442};
+
+            vaultUnlocked = false;
+            showMessage = false;
+            energyCollected = false;
+
+            mode = MODE_MENU;
+            break;
+    }
+}
 
 static void StartCurrentMinigame(void)
 {
     switch (game.currentRoom) {
+
         case 1:
             mode = MODE_CIPHER;
             Cipher_Init(&game.lives);
@@ -53,6 +121,7 @@ static void StartCurrentMinigame(void)
 static void UnloadCurrentMinigame(void)
 {
     switch (mode) {
+
         case MODE_CIPHER:
             Cipher_Unload();
             break;
@@ -77,31 +146,77 @@ static void CompleteRoom(void)
     game.currentRoom++;
 
     if (game.currentRoom > TOTAL_ROOMS) {
-        game.gameRunning = false;
+
+        game.currentRoom = TOTAL_ROOMS;
+
+        StartMemory(
+            MEMORY_DISCOVERY,
+            AFTER_DISCOVERY
+        );
+
         return;
     }
 
-    mode = MODE_EXPLORATION;
     vaultUnlocked = false;
     showMessage = false;
+    energyCollected = false;
 
     game.player.position.x = 100;
+
+    if (game.currentRoom == 2) {
+
+        game.player.position.y = 442;
+
+        StartMemory(
+            MEMORY_BETWEEN_ROOMS,
+            AFTER_ROOM1
+        );
+
+        return;
+    }
+
+    if (game.currentRoom == 3) {
+
+        // BIT mais próximo da passarela da Sala 3.
+        game.player.position.y = 555;
+
+        StartMemory(
+            MEMORY_ROOM2,
+            AFTER_ROOM2
+        );
+
+        return;
+    }
+
+    game.player.position.y = 442;
+    mode = MODE_EXPLORATION;
 }
 
 void Game_Init(void)
 {
-    game.lives = 5;
+    game.lives = 100;
     game.currentRoom = 1;
     game.gameRunning = true;
 
-    mode = MODE_EXPLORATION;
+    mode = MODE_MENU;
+
     showMessage = false;
     vaultUnlocked = false;
+    energyCollected = false;
+    campaignCompleted = false;
 
     Room_Init();
-    doorClosed = LoadTexture("assets/backgrounds/portafechada.png");
+    Menu_Init();
+    Memory_Init();
 
-    Player_Init(&game.player, (Vector2){100, 442});
+    doorClosed = LoadTexture(
+        "assets/backgrounds/portafechada.png"
+    );
+
+    Player_Init(
+        &game.player,
+        (Vector2){100, 442}
+    );
 }
 
 void Game_Update(float dt)
@@ -115,11 +230,47 @@ void Game_Update(float dt)
         return;
     }
 
+    // Menu inicial e reinicio da campanha.
+    if (mode == MODE_MENU) {
+
+        if (Menu_Update()) {
+
+            game.currentRoom = 1;
+            game.lives = 100;
+            game.player.position = (Vector2){100, 442};
+
+            vaultUnlocked = false;
+            showMessage = false;
+            energyCollected = false;
+            campaignCompleted = false;
+
+            StartMemory(
+                MEMORY_INTRO,
+                AFTER_INTRO
+            );
+        }
+
+        return;
+    }
+
+    // Sequencias narrativas.
+    if (mode == MODE_MEMORY) {
+
+        if (Memory_Update(dt)) {
+            ContinueAfterMemory();
+        }
+
+        return;
+    }
+
+    // Minigames.
     if (mode != MODE_EXPLORATION) {
+
         bool completed = false;
         bool gameOver = false;
 
         switch (mode) {
+
             case MODE_CIPHER: {
                 CipherResult r = Cipher_Update();
                 completed = r == CIPHER_COMPLETED;
@@ -145,10 +296,14 @@ void Game_Update(float dt)
                 break;
         }
 
-        if (completed)
+        if (completed) {
+
             CompleteRoom();
-        else if (gameOver || game.lives <= 0) {
+
+        } else if (gameOver || game.lives <= 0) {
+
             UnloadCurrentMinigame();
+
             game.lives = 0;
             game.gameRunning = false;
         }
@@ -156,6 +311,7 @@ void Game_Update(float dt)
         return;
     }
 
+    // Movimentacao do BIT.
     Player_Update(
         &game.player,
         dt,
@@ -169,12 +325,43 @@ void Game_Update(float dt)
         game.player.size.y
     };
 
-    Rectangle interactionArea = {
-        vault.x - 35,
-        vault.y + vault.height - 70,
-        vault.width + 70,
-        70
-    };
+    // Coletaveis de energia.
+    Rectangle currentEnergyPickup =
+        game.currentRoom == 3
+            ? energyPickupRoom3
+            : energyPickup;
+
+    if ((game.currentRoom == 2 || game.currentRoom == 3) &&
+        !energyCollected &&
+        CheckCollisionRecs(playerBounds, currentEnergyPickup)) {
+
+        game.lives += 20;
+
+        if (game.lives > 100)
+            game.lives = 100;
+
+        energyCollected = true;
+    }
+
+    // Interacao com o cofre ou computador.
+    Rectangle interactionArea;
+
+    if (game.currentRoom == 3) {
+
+        // Estacao de computador no canto direito.
+        interactionArea = (Rectangle){
+            830, 500, 270, 200
+        };
+
+    } else {
+
+        interactionArea = (Rectangle){
+            vault.x - 35,
+            vault.y + vault.height - 70,
+            vault.width + 70,
+            70
+        };
+    }
 
     showMessage = CheckCollisionRecs(
         playerBounds,
@@ -191,6 +378,19 @@ void Game_Update(float dt)
 
 void Game_Draw(void)
 {
+    // Menu inicial.
+    if (mode == MODE_MENU) {
+        Menu_Draw();
+        return;
+    }
+
+    // Cenas da historia.
+    if (mode == MODE_MEMORY) {
+        Memory_Draw();
+        return;
+    }
+
+    // Telas dos minigames.
     if (mode == MODE_CIPHER) {
         Room_Draw(game.currentRoom);
         Cipher_Draw();
@@ -211,8 +411,9 @@ void Game_Draw(void)
 
     Room_Draw(game.currentRoom);
 
-    if (doorClosed.id != 0)
-    {
+    // A porta aparece somente nas salas 1 e 2.
+    if (game.currentRoom != 3 && doorClosed.id != 0) {
+
         float scale = 300.0f / doorClosed.height;
 
         float doorWidth = doorClosed.width * scale;
@@ -230,35 +431,150 @@ void Game_Draw(void)
         );
     }
 
-    Player_Draw(&game.player);
+    // Desenho da bateria coletavel.
+    if ((game.currentRoom == 2 || game.currentRoom == 3) &&
+        !energyCollected) {
 
-    DrawText("LOGIC CORE", 50, 25, 25, WHITE);
+        float batteryX = game.currentRoom == 3 ? 687 : 522;
+        float batteryY = game.currentRoom == 3 ? 570 : 485;
 
-    DrawText(
-        TextFormat("SALA %02d / %02d", game.currentRoom, TOTAL_ROOMS),
-        850, 25, 20, LIGHTGRAY
-    );
+        DrawCircleGradient(
+            (Vector2){batteryX + 28, batteryY + 35},
+            48,
+            (Color){0, 180, 255, 75},
+            BLANK
+        );
 
-    DrawText(
-        TextFormat("VIDAS: %d", game.lives),
-        50, 650, 20, WHITE
-    );
+        DrawRectangleRounded(
+            (Rectangle){batteryX, batteryY, 56, 76},
+            0.22f, 8,
+            (Color){15, 35, 65, 255}
+        );
 
-    if (showMessage && !vaultUnlocked) {
-        DrawRectangle(300, 680, 500, 45, DARKBLUE);
+        DrawRectangleRoundedLinesEx(
+            (Rectangle){batteryX, batteryY, 56, 76},
+            0.22f, 8, 3,
+            SKYBLUE
+        );
+
+        DrawRectangleRounded(
+            (Rectangle){batteryX + 17, batteryY - 8, 22, 10},
+            0.3f, 4,
+            SKYBLUE
+        );
+
+        DrawRectangleRounded(
+            (Rectangle){batteryX + 8, batteryY + 8, 40, 60},
+            0.15f, 6,
+            (Color){0, 105, 165, 255}
+        );
+
+        DrawRectangleRoundedLinesEx(
+            (Rectangle){batteryX + 8, batteryY + 8, 40, 60},
+            0.15f, 6, 2,
+            (Color){100, 235, 255, 255}
+        );
 
         DrawText(
-            "PRESSIONE E PARA INTERAGIR",
-            345, 692, 20, WHITE
+            "Z",
+            (int)batteryX + 16,
+            (int)batteryY + 18,
+            36,
+            WHITE
+        );
+
+        DrawText(
+            "+20%",
+            (int)batteryX + 1,
+            (int)batteryY + 80,
+            18,
+            SKYBLUE
         );
     }
 
-    if (!game.gameRunning) {
-        DrawRectangle(250, 300, 600, 120, DARKBLUE);
+    Player_Draw(&game.player);
+
+    DrawText(
+        "LOGIC CORE",
+        50, 25, 25, WHITE
+    );
+
+    DrawText(
+        TextFormat(
+            "SALA %02d / %02d",
+            game.currentRoom,
+            TOTAL_ROOMS
+        ),
+        850, 25, 20, LIGHTGRAY
+    );
+
+    // Indicador de bateria do BIT.
+    Color batteryColor = game.lives > 40
+        ? GREEN
+        : (game.lives > 20 ? ORANGE : RED);
+
+    DrawText(
+        "BATERIA DO BIT",
+        50, 642, 16, WHITE
+    );
+
+    DrawRectangle(
+        50, 672, 180, 14,
+        DARKGRAY
+    );
+
+    DrawRectangle(
+        50,
+        672,
+        (int)(180 * game.lives / 100.0f),
+        14,
+        batteryColor
+    );
+
+    DrawRectangleLines(
+        50, 672, 180, 14,
+        WHITE
+    );
+
+    DrawText(
+        TextFormat("%d%%", game.lives),
+        240, 667, 20, batteryColor
+    );
+
+    // Mensagem de interacao.
+    if (showMessage && !vaultUnlocked) {
+
+        DrawRectangle(
+            300, 680, 500, 45,
+            DARKBLUE
+        );
 
         DrawText(
-            game.lives <= 0 ? "FIM DE JOGO" : "CAMPANHA CONCLUIDA!",
-            350, 345, 30, WHITE
+            game.currentRoom == 3
+                ? "PRESSIONE E PARA ACESSAR O COMPUTADOR"
+                : "PRESSIONE E PARA INTERAGIR",
+            game.currentRoom == 3 ? 305 : 345,
+            692,
+            game.currentRoom == 3 ? 17 : 20,
+            WHITE
+        );
+    }
+
+    // Tela de encerramento.
+    if (!game.gameRunning) {
+
+        DrawRectangle(
+            250, 300, 600, 120,
+            DARKBLUE
+        );
+
+        DrawText(
+            game.lives <= 0
+                ? "FIM DE JOGO"
+                : campaignCompleted
+                    ? "A VERDADE NAO PODE SER APAGADA."
+                    : "CAMPANHA CONCLUIDA!",
+            300, 345, 25, WHITE
         );
     }
 }
@@ -266,11 +582,15 @@ void Game_Draw(void)
 void Game_Unload(void)
 {
     UnloadCurrentMinigame();
+
+    Menu_Unload();
+    Memory_Unload();
+
     Player_Unload(&game.player);
     Room_Unload();
 
-    if (doorClosed.id != 0)
-    {
+    if (doorClosed.id != 0) {
         UnloadTexture(doorClosed);
+        doorClosed.id = 0;
     }
 }
