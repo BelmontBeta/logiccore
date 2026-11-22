@@ -354,28 +354,32 @@ CipherResult Cipher_Update(void)
     if (result != CIPHER_RUNNING)
         return result;
 
+    // Botoes dos operadores e variaveis.
     for (int i = 0; i < TOKEN_COUNT; i++) {
         int row = i / 5;
         int column = i % 5;
 
         tokenButtons[i] = (Rectangle){
             105 + column * 100,
-            row == 0 ? 475 : 530,
+            row == 0 ? 520 : 570,
             90,
-            45
+            42
         };
 
         if (ButtonClicked(tokenButtons[i]))
             AddToken(tokens[i]);
     }
 
-    if (ButtonClicked((Rectangle){650, 475, 130, 45}))
+    // Apagar ultimo token.
+    if (ButtonClicked((Rectangle){650, 520, 130, 42}))
         RemoveLastToken();
 
-    if (ButtonClicked((Rectangle){650, 530, 130, 45}))
+    // Limpar formula.
+    if (ButtonClicked((Rectangle){650, 570, 130, 42}))
         input[0] = '\0';
 
-    if (ButtonClicked((Rectangle){800, 475, 130, 100})) {
+    // Verificar formula.
+    if (ButtonClicked((Rectangle){800, 520, 130, 92})) {
 
         bool correct;
 
@@ -416,21 +420,18 @@ CipherResult Cipher_Update(void)
     return result;
 }
 
-
 void Cipher_Draw(void)
 {
     // Painel principal.
     DrawRectangleRounded(
         (Rectangle){70, 110, 960, 600},
-        0.025f,
-        8,
+        0.025f, 8,
         (Color){13, 19, 32, 255}
     );
 
     DrawRectangleRoundedLinesEx(
         (Rectangle){70, 110, 960, 600},
-        0.025f,
-        8,
+        0.025f, 8,
         2,
         (Color){35, 115, 155, 255}
     );
@@ -446,35 +447,19 @@ void Cipher_Draw(void)
         (Color){35, 170, 215, 255}
     );
 
-    DrawText(
-        "CIPHER LOGIC",
-        100, 125, 32,
-        SKYBLUE
-    );
-
-    DrawText(
-        "INTERCEPTACAO DE RADIO",
-        102, 163, 16,
-        LIGHTGRAY
-    );
+    DrawText("CIPHER LOGIC", 100, 125, 32, SKYBLUE);
+    DrawText("INTERCEPTACAO DE RADIO", 102, 163, 16, LIGHTGRAY);
 
     if (result == CIPHER_COMPLETED) {
-
         DrawText(
             "TODAS AS FASES CONCLUIDAS!",
             230, 350, 30, GREEN
         );
-
         return;
     }
 
     if (result == CIPHER_GAME_OVER) {
-
-        DrawText(
-            "FIM DE JOGO",
-            400, 350, 35, RED
-        );
-
+        DrawText("FIM DE JOGO", 400, 350, 35, RED);
         return;
     }
 
@@ -482,19 +467,13 @@ void Cipher_Draw(void)
 
     // Informacoes da campanha.
     DrawText(
-        TextFormat(
-            "FASE %d / %d",
-            currentLevel + 1,
-            LEVEL_COUNT
-        ),
-        800, 130, 19,
-        WHITE
+        TextFormat("FASE %d / %d", currentLevel + 1, LEVEL_COUNT),
+        800, 130, 19, WHITE
     );
 
     DrawText(
         TextFormat("BATERIA: %d%%", *campaignLives),
-        800, 158, 17,
-        GREEN
+        800, 158, 17, GREEN
     );
 
     // Dificuldade.
@@ -513,16 +492,11 @@ void Cipher_Draw(void)
 
     DrawText(
         level->difficulty,
-        120, 213, 16,
-        difficultyColor
+        120, 213, 16, difficultyColor
     );
 
     // Desafio.
-    DrawText(
-        "OBJETIVO DO SISTEMA",
-        105, 253, 17,
-        SKYBLUE
-    );
+    DrawText("OBJETIVO DO SISTEMA", 105, 253, 17, SKYBLUE);
 
     DrawRectangleRounded(
         (Rectangle){100, 280, 880, 62},
@@ -530,23 +504,12 @@ void Cipher_Draw(void)
         (Color){24, 34, 50, 255}
     );
 
-    DrawRectangle(
-        100, 280, 4, 62,
-        SKYBLUE
-    );
+    DrawRectangle(100, 280, 4, 62, SKYBLUE);
 
-    DrawText(
-        level->description,
-        120, 301, 17,
-        WHITE
-    );
+    DrawText(level->description, 120, 301, 17, WHITE);
 
     // Variaveis.
-    DrawText(
-        "VARIAVEIS LOGICAS",
-        105, 360, 17,
-        SKYBLUE
-    );
+    DrawText("VARIAVEIS LOGICAS", 105, 360, 17, SKYBLUE);
 
     DrawRectangleRounded(
         (Rectangle){100, 385, 880, 42},
@@ -554,80 +517,79 @@ void Cipher_Draw(void)
         (Color){20, 29, 44, 255}
     );
 
-    DrawText(
-        level->variables,
-        115, 399, 15,
-        LIGHTGRAY
-    );
+    DrawText(level->variables, 115, 399, 15, LIGHTGRAY);
 
-    // Formula.
-    DrawText(
-        "CONSTRUA SUA FORMULA",
-        105, 438, 17,
-        SKYBLUE
-    );
+    // Campo da formula.
+    DrawText("CONSTRUA SUA FORMULA", 105, 438, 17, SKYBLUE);
 
     DrawRectangleRounded(
-        (Rectangle){100, 463, 830, 42},
+        (Rectangle){100, 463, 880, 42},
         0.12f, 8,
         (Color){5, 13, 23, 255}
     );
 
     DrawRectangleRoundedLinesEx(
-        (Rectangle){100, 463, 830, 42},
+        (Rectangle){100, 463, 880, 42},
         0.12f, 8,
         2,
         (Color){35, 145, 190, 255}
     );
 
+    // Mantem o final da formula visivel quando ela fica comprida.
+    int textWidth = MeasureText(input, 19);
+    int textX = textWidth > 840 ? 955 - textWidth : 115;
+
+    BeginScissorMode(110, 465, 860, 38);
+
     DrawText(
         input[0] ? input : "Aguardando formula...",
-        115, 474, 19,
+        input[0] ? textX : 115,
+        474,
+        19,
         input[0] ? (Color){110, 235, 255, 255} : GRAY
     );
 
-    // Botoes dos operadores e variaveis.
+    EndScissorMode();
+
+    // Operadores e variaveis.
+    // Agora ficam abaixo do campo, sem cobrir a formula.
     for (int i = 0; i < TOKEN_COUNT; i++) {
         DrawButton(tokenButtons[i], labels[i]);
     }
 
     // Acoes.
     DrawButton(
-        (Rectangle){650, 475, 130, 45},
+        (Rectangle){650, 520, 130, 42},
         "Apagar"
     );
 
     DrawButton(
-        (Rectangle){650, 530, 130, 45},
+        (Rectangle){650, 570, 130, 42},
         "Limpar"
     );
 
     DrawButton(
-        (Rectangle){800, 475, 130, 100},
+        (Rectangle){800, 520, 130, 92},
         "Verificar"
     );
 
-    // Feedback.
+    // Feedback do sistema.
     DrawRectangleRounded(
-        (Rectangle){100, 610, 880, 55},
+        (Rectangle){100, 635, 880, 55},
         0.12f, 8,
         (Color){20, 31, 46, 255}
     );
 
     DrawRectangle(
-        100, 610, 4, 55,
+        100, 635, 4, 55,
         (Color){35, 170, 215, 255}
     );
 
-    DrawText(
-        "STATUS DO SISTEMA",
-        118, 616, 13,
-        SKYBLUE
-    );
+    DrawText("STATUS DO SISTEMA", 118, 641, 13, SKYBLUE);
 
-    DrawText(
-        message,
-        118, 636, 17,
-        WHITE
-    );
+    DrawText(message, 118, 661, 17, WHITE);
+}
+
+void Cipher_Unload(void)
+{
 }

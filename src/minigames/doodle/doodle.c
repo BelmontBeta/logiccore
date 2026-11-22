@@ -89,6 +89,8 @@ static const char *operatorSymbols[] = {
     "<->"
 };
 
+/* Paleta visual */
+
 static const Color BG = {12, 16, 27, 255};
 static const Color PANEL = {23, 31, 48, 255};
 static const Color CARD = {35, 46, 66, 255};
@@ -98,10 +100,13 @@ static const Color BORDER = {75, 110, 145, 255};
 static const Color TEXT = {240, 245, 252, 255};
 static const Color MUTED = {165, 180, 200, 255};
 static const Color CYAN = {80, 205, 235, 255};
-static const Color 	DOODLE_GREEN = {85, 220, 145, 255};
+
+static const Color DOODLE_GREEN = {85, 220, 145, 255};
 static const Color DOODLE_RED = {245, 90, 100, 255};
 static const Color DOODLE_GOLD = {255, 200, 90, 255};
 static const Color DOODLE_PURPLE = {185, 140, 255, 255};
+
+/* Estado do minigame */
 
 static Formula formulas[MAX_FORMULAS];
 
@@ -112,6 +117,7 @@ static int selectedB;
 static int selectedOperator;
 static int scroll;
 static int errors;
+
 static int *campaignLives;
 
 static float timeLeft;
@@ -124,9 +130,12 @@ static bool tracker;
 
 static char statusTitle[100];
 static char statusMessage[200];
+
 static Color statusColor;
 
 static DoodleResult result = DOODLE_RUNNING;
+
+/* Funcoes auxiliares */
 
 static void SetStatus(
     const char *title,
@@ -152,8 +161,27 @@ static bool Clicked(Rectangle bounds)
 
 static void DrawPanel(Rectangle bounds, Color color)
 {
+    DrawRectangleRounded(
+        (Rectangle){
+            bounds.x + 3,
+            bounds.y + 4,
+            bounds.width,
+            bounds.height
+        },
+        0.06f,
+        6,
+        (Color){0, 0, 0, 65}
+    );
+
     DrawRectangleRounded(bounds, 0.06f, 6, color);
-    DrawRectangleRoundedLinesEx(bounds, 0.06f, 6, 1, BORDER);
+
+    DrawRectangleRoundedLinesEx(
+        bounds,
+        0.06f,
+        6,
+        1.5f,
+        BORDER
+    );
 }
 
 static void DrawCentered(
@@ -167,6 +195,27 @@ static void DrawCentered(
     int width = MeasureText(text, size);
     DrawText(text, centerX - width / 2, y, size, color);
 }
+
+static void DrawFitText(
+    const char *text,
+    int x,
+    int y,
+    int maxWidth,
+    int fontSize,
+    Color color
+)
+{
+    while (
+        MeasureText(text, fontSize) > maxWidth &&
+        fontSize > 8
+    ) {
+        fontSize--;
+    }
+
+    DrawText(text, x, y, fontSize, color);
+}
+
+/* Logica das formulas */
 
 static unsigned char Evaluate(
     unsigned char a,
@@ -221,10 +270,15 @@ static bool FormulaExists(const char *text)
     return false;
 }
 
-static bool AddFormula(const char *text, unsigned char table)
+static bool AddFormula(
+    const char *text,
+    unsigned char table
+)
 {
-    if (formulaCount >= MAX_FORMULAS ||
-        FormulaExists(text)) {
+    if (
+        formulaCount >= MAX_FORMULAS ||
+        FormulaExists(text)
+    ) {
         return false;
     }
 
@@ -241,6 +295,8 @@ static bool AddFormula(const char *text, unsigned char table)
     return true;
 }
 
+/* Controle das fases */
+
 static void ResetStage(void)
 {
     formulaCount = 0;
@@ -251,6 +307,7 @@ static void ResetStage(void)
 
     scroll = 0;
     errors = 0;
+
     hintOn = false;
     tracker = false;
     solved = false;
@@ -298,7 +355,7 @@ static void SolveStage(void)
     SetStatus(
         "DESAFIO SUPERADO",
         stages[currentStage].lesson,
-        GREEN
+        DOODLE_GREEN
     );
 }
 
@@ -324,32 +381,36 @@ static void ReportFailure(const char *message)
         SetStatus(
             "BIT: TENHO UMA PISTA",
             stages[currentStage].hint,
-            GOLD
+            DOODLE_GOLD
         );
     }
     else {
         SetStatus(
             "TENTATIVA INCORRETA",
             message,
-            RED
+            DOODLE_RED
         );
     }
 }
+
+/* Operacoes do jogador */
 
 static void FuseFormulas(void)
 {
     if (solved || result != DOODLE_RUNNING)
         return;
 
-    if (selectedA < 0 ||
+    if (
+        selectedA < 0 ||
         selectedB < 0 ||
-        selectedOperator < 0) {
-
+        selectedOperator < 0
+    ) {
         SetStatus(
             "FUSAO INCOMPLETA",
             "Selecione duas formulas e um conectivo.",
-            GOLD
+            DOODLE_GOLD
         );
+
         return;
     }
 
@@ -382,8 +443,9 @@ static void FuseFormulas(void)
         SetStatus(
             "CADERNO CHEIO",
             "Nao ha espaco para novas formulas.",
-            RED
+            DOODLE_RED
         );
+
         return;
     }
 
@@ -398,14 +460,14 @@ static void FuseFormulas(void)
         SetStatus(
             "TAUTOLOGIA DESCOBERTA",
             "A formula e verdadeira em todas as linhas.",
-            GREEN
+            DOODLE_GREEN
         );
     }
     else if (table == 0x00) {
         SetStatus(
             "CONTRADICAO DESCOBERTA",
             "A formula e falsa em todas as linhas.",
-            GOLD
+            DOODLE_GOLD
         );
     }
     else {
@@ -428,8 +490,9 @@ static void NegateFormula(void)
         SetStatus(
             "SELECIONE UMA FORMULA",
             "Clique em uma formula e pressione N.",
-            GOLD
+            DOODLE_GOLD
         );
+
         return;
     }
 
@@ -455,8 +518,9 @@ static void NegateFormula(void)
         SetStatus(
             "CADERNO CHEIO",
             "Nao ha espaco para novas formulas.",
-            RED
+            DOODLE_RED
         );
+
         return;
     }
 
@@ -490,51 +554,106 @@ static void AdvanceStage(void)
     ResetStage();
 }
 
+/* Elementos visuais */
+
 static void DrawHeader(void)
 {
-    DrawRectangle(70, 105, 960, 55, (Color){11, 19, 32, 255});
+    DrawRectangleRounded(
+        (Rectangle){70, 105, 960, 55},
+        0.08f,
+        8,
+        (Color){11, 22, 38, 255}
+    );
 
-    DrawText("DOODLE LOGIC", 95, 117, 27, CYAN);
-
-    DrawText(
-        TextFormat(
-            "DESAFIO %d / %d",
-            currentStage + 1,
-            TOTAL_STAGES
-        ),
-        770,
-        120,
-        19,
-        WHITE
+    DrawRectangle(
+        70, 157, 960, 3,
+        CYAN
     );
 
     DrawText(
-        TextFormat("VIDAS: %d", campaignLives ? *campaignLives : 0),
-        930,
-        120,
-        18,
-        GREEN
+        "DOODLE LOGIC",
+        95, 117, 27,
+        CYAN
+    );
+
+    DrawText(
+        "MESA DE OPERACOES LOGICAS",
+        97, 143, 10,
+        MUTED
+    );
+
+    DrawRectangleRounded(
+        (Rectangle){750, 115, 145, 34},
+        0.3f, 8,
+        (Color){30, 45, 65, 255}
+    );
+
+    DrawCentered(
+        TextFormat(
+            "FASE %d / %d",
+            currentStage + 1,
+            TOTAL_STAGES
+        ),
+        822,
+        125,
+        16,
+        WHITE
+    );
+
+    DrawRectangleRounded(
+        (Rectangle){910, 115, 100, 34},
+        0.3f, 8,
+        (Color){25, 55, 48, 255}
+    );
+
+    DrawCentered(
+        TextFormat(
+            "VIDAS: %d",
+            campaignLives ? *campaignLives : 0
+        ),
+        960,
+        125,
+        15,
+        DOODLE_GREEN
     );
 }
 
 static void DrawObjective(void)
 {
-    DrawPanel(
-        (Rectangle){80, 175, 940, 105},
-        PANEL
+    Rectangle panel = {80, 175, 940, 105};
+
+    DrawPanel(panel, PANEL);
+
+    DrawRectangleRounded(
+        (Rectangle){98, 190, 5, 72},
+        0.5f, 4,
+        DOODLE_GOLD
     );
 
-    DrawText(stages[currentStage].name, 105, 190, 20, GOLD);
-    DrawText(stages[currentStage].goal, 105, 222, 18, TEXT);
+    DrawText(
+        "OBJETIVO DA MISSAO",
+        118, 190, 13,
+        CYAN
+    );
 
     DrawText(
+        stages[currentStage].name,
+        118, 210, 20,
+        DOODLE_GOLD
+    );
+
+    DrawFitText(
+        stages[currentStage].goal,
+        118, 237, 850, 17,
+        TEXT
+    );
+
+    DrawFitText(
         hintOn
-            ? TextFormat("PISTA: %s", stages[currentStage].hint)
+            ? TextFormat("PISTA DO BIT: %s", stages[currentStage].hint)
             : "BIT oferece uma pista depois de 3 erros.",
-        105,
-        250,
-        15,
-        MUTED
+        118, 258, 850, 12,
+        hintOn ? DOODLE_GOLD : MUTED
     );
 }
 
@@ -544,8 +663,22 @@ static void DrawInventory(void)
 
     DrawPanel(panel, PANEL);
 
-    DrawText("CADERNO DE FORMULAS", 100, 310, 19, TEXT);
-    DrawText("Selecione duas formulas.", 100, 337, 14, MUTED);
+    DrawText(
+        "CADERNO DE FORMULAS",
+        100, 310, 19,
+        CYAN
+    );
+
+    DrawText(
+        "Selecione duas formulas para combinar.",
+        100, 337, 13,
+        MUTED
+    );
+
+    DrawRectangle(
+        100, 355, 390, 2,
+        (Color){50, 75, 100, 255}
+    );
 
     int maxScroll = formulaCount - VISIBLE_FORMULAS;
 
@@ -558,10 +691,11 @@ static void DrawInventory(void)
     if (scroll > maxScroll)
         scroll = maxScroll;
 
-    for (int i = 0;
-         i < VISIBLE_FORMULAS && scroll + i < formulaCount;
-         i++) {
-
+    for (
+        int i = 0;
+        i < VISIBLE_FORMULAS && scroll + i < formulaCount;
+        i++
+    ) {
         int index = scroll + i;
         int row = i / 3;
         int column = i % 3;
@@ -576,52 +710,59 @@ static void DrawInventory(void)
         bool selected =
             index == selectedA || index == selectedB;
 
+        Color cardColor = selected
+            ? (Color){18, 75, 91, 255}
+            : Hover(button)
+                ? (Color){48, 65, 88, 255}
+                : CARD;
+
+        DrawRectangleRounded(
+            (Rectangle){
+                button.x + 2,
+                button.y + 3,
+                button.width,
+                button.height
+            },
+            0.12f, 6,
+            (Color){0, 0, 0, 55}
+        );
+
         DrawRectangleRounded(
             button,
-            0.08f,
-            5,
-            selected ? SELECTED :
-            Hover(button) ? HOVER : CARD
+            0.12f, 6,
+            cardColor
         );
 
         DrawRectangleRoundedLinesEx(
             button,
-            0.08f,
-            5,
-            1,
+            0.12f, 6,
+            selected ? 2 : 1,
             selected ? CYAN : BORDER
         );
-
-        int fontSize = 15;
-
-        while (
-            MeasureText(formulas[index].text, fontSize) >
-            button.width - 10 &&
-            fontSize > 8
-        ) {
-            fontSize--;
-        }
 
         DrawCentered(
             formulas[index].text,
             (int)(button.x + button.width / 2),
             (int)button.y + 15,
-            fontSize,
-            TEXT
+            13,
+            selected ? CYAN : TEXT
         );
 
         if (Clicked(button))
             SelectFormula(index);
     }
 
+    DrawRectangle(
+        100, 590, 390, 2,
+        (Color){50, 75, 100, 255}
+    );
+
     DrawText(
         TextFormat(
             "%d FORMULAS DESCOBERTAS",
             formulaCount
         ),
-        100,
-        600,
-        13,
+        100, 600, 13,
         CYAN
     );
 
@@ -643,27 +784,51 @@ static void DrawControls(void)
         PANEL
     );
 
-    DrawText("MESA DE FUSAO", 555, 310, 20, TEXT);
+    DrawText(
+        "MESA DE FUSAO",
+        555, 310, 20,
+        CYAN
+    );
 
     DrawText(
+        "Combine duas formulas usando um conectivo.",
+        555, 337, 13,
+        MUTED
+    );
+
+    /* Formula A */
+
+    DrawRectangleRounded(
+        (Rectangle){555, 365, 205, 30},
+        0.12f, 6,
+        (Color){10, 24, 39, 255}
+    );
+
+    DrawFitText(
         selectedA >= 0
             ? formulas[selectedA].text
             : "FORMULA A",
-        560,
-        350,
-        17,
+        565, 373, 185, 15,
         selectedA >= 0 ? CYAN : MUTED
     );
 
-    DrawText(
+    /* Formula B */
+
+    DrawRectangleRounded(
+        (Rectangle){790, 365, 205, 30},
+        0.12f, 6,
+        (Color){10, 24, 39, 255}
+    );
+
+    DrawFitText(
         selectedB >= 0
             ? formulas[selectedB].text
             : "FORMULA B",
-        790,
-        350,
-        17,
+        800, 373, 185, 15,
         selectedB >= 0 ? CYAN : MUTED
     );
+
+    /* Conectivos */
 
     for (int i = 0; i < 4; i++) {
         Rectangle button = {
@@ -675,20 +840,21 @@ static void DrawControls(void)
 
         bool selected = selectedOperator == i;
 
+        Color background = selected
+            ? (Color){57, 42, 88, 255}
+            : Hover(button) ? HOVER : CARD;
+
         DrawRectangleRounded(
             button,
-            0.08f,
-            5,
-            selected ? SELECTED :
-            Hover(button) ? HOVER : CARD
+            0.12f, 6,
+            background
         );
 
         DrawRectangleRoundedLinesEx(
             button,
-            0.08f,
-            5,
-            1,
-            selected ? PURPLE : BORDER
+            0.12f, 6,
+            selected ? 2 : 1,
+            selected ? DOODLE_PURPLE : BORDER
         );
 
         DrawCentered(
@@ -696,47 +862,90 @@ static void DrawControls(void)
             (int)(button.x + button.width / 2),
             (int)button.y + 11,
             14,
-            selected ? PURPLE : TEXT
+            selected ? DOODLE_PURPLE : TEXT
         );
 
         if (Clicked(button))
             selectedOperator = i;
     }
 
+    /* Botao fundir */
+
     Rectangle fuseButton = {555, 510, 205, 45};
 
-    DrawRectangleRounded(fuseButton, 0.08f, 5, SELECTED);
-    DrawRectangleRoundedLinesEx(fuseButton, 0.08f, 5, 2, CYAN);
+    DrawRectangleRounded(
+        fuseButton,
+        0.12f, 6,
+        (Color){17, 78, 94, 255}
+    );
+
+    DrawRectangleRoundedLinesEx(
+        fuseButton,
+        0.12f, 6,
+        2,
+        CYAN
+    );
 
     DrawCentered(
         "FUNDIR FORMULAS",
-        657,
-        523,
-        15,
+        657, 523, 15,
         TEXT
     );
 
     if (Clicked(fuseButton))
         FuseFormulas();
 
+    /* Botao negar */
+
     Rectangle negateButton = {790, 510, 205, 45};
 
-    DrawRectangleRounded(negateButton, 0.08f, 5, CARD);
-    DrawRectangleRoundedLinesEx(negateButton, 0.08f, 5, 1, PURPLE);
+    DrawRectangleRounded(
+        negateButton,
+        0.12f, 6,
+        (Color){49, 37, 72, 255}
+    );
+
+    DrawRectangleRoundedLinesEx(
+        negateButton,
+        0.12f, 6,
+        2,
+        DOODLE_PURPLE
+    );
 
     DrawCentered(
         "NEGAR FORMULA [N]",
-        892,
-        523,
-        14,
+        892, 523, 14,
         TEXT
     );
 
     if (Clicked(negateButton))
         NegateFormula();
 
-    DrawText(statusTitle, 555, 575, 15, statusColor);
-    DrawText(statusMessage, 555, 600, 13, TEXT);
+    /* Status do BIT */
+
+    DrawRectangleRounded(
+        (Rectangle){550, 570, 450, 53},
+        0.12f, 6,
+        (Color){12, 23, 38, 255}
+    );
+
+    DrawRectangleRounded(
+        (Rectangle){550, 570, 4, 53},
+        0.5f, 4,
+        statusColor
+    );
+
+    DrawFitText(
+        statusTitle,
+        565, 578, 420, 14,
+        statusColor
+    );
+
+    DrawFitText(
+        statusMessage,
+        565, 600, 420, 13,
+        TEXT
+    );
 }
 
 static void DrawTimer(void)
@@ -749,35 +958,44 @@ static void DrawTimer(void)
             seconds / 60,
             seconds % 60
         ),
-        100,
-        650,
-        19,
-        timeLeft <= 30 ? RED : WHITE
+        100, 650, 18,
+        timeLeft <= 30 ? DOODLE_RED : TEXT
     );
 
-    DrawRectangle(300, 657, 650, 12, DARKGRAY);
-
-    DrawRectangle(
-        300,
-        657,
-        (int)(650 * pressure / 100.0f),
-        12,
-        pressure >= 80 ? RED : CYAN
+    DrawRectangleRounded(
+        (Rectangle){300, 654, 650, 15},
+        0.5f, 8,
+        (Color){35, 45, 60, 255}
     );
+
+    float progress = pressure / 100.0f;
+
+    if (progress < 0)
+        progress = 0;
+
+    if (progress > 1)
+        progress = 1;
+
+    if (progress > 0) {
+        DrawRectangleRounded(
+            (Rectangle){
+                300, 654,
+                650 * progress, 15
+            },
+            0.5f, 8,
+            pressure >= 80 ? DOODLE_RED : CYAN
+        );
+    }
 
     DrawText(
         tracker ? "RASTREADOR ATIVO" : "RASTREADOR INATIVO",
-        100,
-        685,
-        15,
-        tracker ? GOLD : MUTED
+        100, 685, 14,
+        tracker ? DOODLE_GOLD : MUTED
     );
 
     DrawText(
-        "N: negar formula   ENTER: fundir",
-        650,
-        685,
-        14,
+        "N: NEGAR FORMULA   ENTER: FUNDIR",
+        650, 685, 13,
         MUTED
     );
 }
@@ -789,22 +1007,67 @@ static void DrawOverlay(
     Color color
 )
 {
-    DrawRectangle(70, 105, 960, 605, (Color){2, 5, 12, 220});
+    DrawRectangle(
+        70, 105, 960, 605,
+        (Color){2, 5, 12, 220}
+    );
 
     DrawPanel(
         (Rectangle){220, 270, 660, 220},
         PANEL
     );
 
-    DrawCentered(title, 550, 300, 27, color);
-    DrawCentered(description, 550, 355, 17, TEXT);
+    DrawRectangleRounded(
+        (Rectangle){220, 270, 660, 5},
+        0.5f, 6,
+        color
+    );
+
+    DrawCentered(
+        title,
+        550, 310, 27,
+        color
+    );
+
+    int descriptionSize = 17;
+
+    while (
+        MeasureText(description, descriptionSize) > 600 &&
+        descriptionSize > 10
+    ) {
+        descriptionSize--;
+    }
+
+    DrawCentered(
+        description,
+        550, 365, descriptionSize,
+        TEXT
+    );
 
     Rectangle button = {390, 415, 320, 48};
 
-    DrawRectangleRounded(button, 0.08f, 5, SELECTED);
-    DrawRectangleRoundedLinesEx(button, 0.08f, 5, 2, color);
+    bool hover = Hover(button);
 
-    DrawCentered(buttonText, 550, 429, 17, WHITE);
+    DrawRectangleRounded(
+        button,
+        0.12f, 6,
+        hover
+            ? (Color){25, 105, 125, 255}
+            : SELECTED
+    );
+
+    DrawRectangleRoundedLinesEx(
+        button,
+        0.12f, 6,
+        2,
+        color
+    );
+
+    DrawCentered(
+        buttonText,
+        550, 429, 17,
+        WHITE
+    );
 
     if (Clicked(button)) {
         if (solved) {
@@ -815,6 +1078,8 @@ static void DrawOverlay(
         }
     }
 }
+
+/* Funcoes publicas do minigame */
 
 void Doodle_Init(int *lives)
 {
@@ -875,7 +1140,7 @@ DoodleResult Doodle_Update(float dt)
         SetStatus(
             "TEMPO ESGOTADO",
             "Bateria reduzida em 20%. Tente novamente esta fase.",
-            RED
+            DOODLE_RED
         );
 
         return result;
@@ -894,7 +1159,10 @@ DoodleResult Doodle_Update(float dt)
 
 void Doodle_Draw(void)
 {
-    DrawRectangle(70, 105, 960, 605, BG);
+    DrawRectangle(
+        70, 105, 960, 605,
+        BG
+    );
 
     DrawHeader();
 
@@ -903,8 +1171,9 @@ void Doodle_Draw(void)
             "OPERACAO CONCLUIDA",
             "BIT superou os cinco desafios!",
             "COFRE ABERTO",
-            GREEN
+            DOODLE_GREEN
         );
+
         return;
     }
 
@@ -913,8 +1182,9 @@ void Doodle_Draw(void)
             "FIM DE JOGO",
             "As vidas da campanha acabaram.",
             "FIM",
-            RED
+            DOODLE_RED
         );
+
         return;
     }
 
@@ -938,7 +1208,7 @@ void Doodle_Draw(void)
             currentStage == TOTAL_STAGES - 1
                 ? "ABRIR O COFRE"
                 : "PROXIMO DESAFIO",
-            GREEN
+            DOODLE_GREEN
         );
     }
 }

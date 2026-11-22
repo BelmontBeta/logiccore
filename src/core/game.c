@@ -16,7 +16,8 @@ typedef enum {
     MODE_EXPLORATION,
     MODE_CIPHER,
     MODE_DOODLE,
-    MODE_TERMINAL
+    MODE_TERMINAL,
+    MODE_GAME_OVER
 } GameMode;
 
 typedef enum {
@@ -192,6 +193,26 @@ static void CompleteRoom(void)
     mode = MODE_EXPLORATION;
 }
 
+static void RestartCampaign(void)
+{
+    game.lives = 100;
+    game.currentRoom = 1;
+    game.gameRunning = true;
+
+    game.player.position = (Vector2){100, 442};
+    game.player.currentFrame = 0;
+    game.player.animationTimer = 0;
+    game.player.moving = false;
+    game.player.facingLeft = false;
+
+    vaultUnlocked = false;
+    showMessage = false;
+    energyCollected = false;
+    campaignCompleted = false;
+
+    mode = MODE_EXPLORATION;
+}
+
 void Game_Init(void)
 {
     game.lives = 100;
@@ -221,14 +242,26 @@ void Game_Init(void)
 
 void Game_Update(float dt)
 {
-    if (!game.gameRunning)
-        return;
+   if (mode == MODE_GAME_OVER) {
+    Rectangle restartButton = {400, 450, 300, 65};
 
-    if (game.lives <= 0) {
-        game.lives = 0;
-        game.gameRunning = false;
-        return;
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+        CheckCollisionPointRec(GetMousePosition(), restartButton)) {
+        RestartCampaign();
     }
+
+    return;
+}
+
+if (!game.gameRunning)
+    return;
+
+if (game.lives <= 0) {
+    game.lives = 0;
+    game.gameRunning = false;
+    mode = MODE_GAME_OVER;
+    return;
+}
 
     // Menu inicial e reinicio da campanha.
     if (mode == MODE_MENU) {
@@ -301,11 +334,11 @@ void Game_Update(float dt)
             CompleteRoom();
 
         } else if (gameOver || game.lives <= 0) {
-
             UnloadCurrentMinigame();
 
             game.lives = 0;
             game.gameRunning = false;
+            mode = MODE_GAME_OVER;
         }
 
         return;
@@ -378,6 +411,51 @@ void Game_Update(float dt)
 
 void Game_Draw(void)
 {
+
+    //gameover
+    if (mode == MODE_GAME_OVER) {
+        DrawRectangle(0, 0, 1100, 760, (Color){5, 10, 22, 245});
+
+        DrawText(
+            "SISTEMA INTERROMPIDO",
+            275, 250, 42, RED
+        );
+
+        DrawText(
+            "A bateria de BIT foi esgotada.",
+            350, 330, 22, LIGHTGRAY
+        );
+
+        Rectangle restartButton = {400, 450, 300, 65};
+
+        bool hovering = CheckCollisionPointRec(
+            GetMousePosition(),
+            restartButton
+        );
+
+        DrawRectangleRounded(
+            restartButton,
+            0.2f,
+            8,
+            hovering ? SKYBLUE : DARKBLUE
+        );
+
+        DrawRectangleRoundedLinesEx(
+            restartButton,
+            0.2f,
+            8,
+            2,
+            SKYBLUE
+        );
+
+        DrawText(
+            "REINICIAR",
+            470, 469, 28, WHITE
+        );
+
+        return;
+    }
+
     // Menu inicial.
     if (mode == MODE_MENU) {
         Menu_Draw();
