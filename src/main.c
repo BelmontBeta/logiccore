@@ -1,10 +1,11 @@
-
 #include "raylib.h"
 #include "core/game.h"
+#include "systems/music.h"
 
 int main(void)
 {
     InitWindow(1100, 760, "LOGIC CORE");
+    InitGameMusic();
     SetTargetFPS(60);
 
     Game_Init();
@@ -13,6 +14,7 @@ int main(void)
     {
         float dt = GetFrameTime();
 
+        UpdateGameMusic();
         Game_Update(dt);
 
         BeginDrawing();
@@ -21,6 +23,7 @@ int main(void)
     }
 
     Game_Unload();
+    CloseGameMusic();
     CloseWindow();
 
     return 0;

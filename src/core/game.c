@@ -1,7 +1,7 @@
-
 #include "game.h"
 
 #include "../systems/player.h"
+#include "../systems/music.h"
 #include "../scenes/room.h"
 #include "../scenes/menu.h"
 #include "../scenes/memory.h"
@@ -61,6 +61,7 @@ static void ContinueAfterMemory(void)
     switch (memoryNextAction) {
 
         case AFTER_INTRO:
+            PlayGameplayMusic();
             mode = MODE_EXPLORATION;
             break;
 
@@ -89,6 +90,7 @@ static void ContinueAfterMemory(void)
             showMessage = false;
             energyCollected = false;
 
+            PlayMenuMusic();
             mode = MODE_MENU;
             break;
     }
@@ -210,6 +212,7 @@ static void RestartCampaign(void)
     energyCollected = false;
     campaignCompleted = false;
 
+    PlayGameplayMusic();
     mode = MODE_EXPLORATION;
 }
 
@@ -242,26 +245,26 @@ void Game_Init(void)
 
 void Game_Update(float dt)
 {
-   if (mode == MODE_GAME_OVER) {
-    Rectangle restartButton = {400, 450, 300, 65};
+    if (mode == MODE_GAME_OVER) {
+        Rectangle restartButton = {400, 450, 300, 65};
 
-    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
-        CheckCollisionPointRec(GetMousePosition(), restartButton)) {
-        RestartCampaign();
+        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+            CheckCollisionPointRec(GetMousePosition(), restartButton)) {
+            RestartCampaign();
+        }
+
+        return;
     }
 
-    return;
-}
+    if (!game.gameRunning)
+        return;
 
-if (!game.gameRunning)
-    return;
-
-if (game.lives <= 0) {
-    game.lives = 0;
-    game.gameRunning = false;
-    mode = MODE_GAME_OVER;
-    return;
-}
+    if (game.lives <= 0) {
+        game.lives = 0;
+        game.gameRunning = false;
+        mode = MODE_GAME_OVER;
+        return;
+    }
 
     // Menu inicial e reinicio da campanha.
     if (mode == MODE_MENU) {
@@ -286,7 +289,7 @@ if (game.lives <= 0) {
         return;
     }
 
-    // Sequencias narrativas.
+    // Sequências narrativas.
     if (mode == MODE_MEMORY) {
 
         if (Memory_Update(dt)) {
@@ -344,7 +347,7 @@ if (game.lives <= 0) {
         return;
     }
 
-    // Movimentacao do BIT.
+    // Movimentação do BIT.
     Player_Update(
         &game.player,
         dt,
@@ -358,7 +361,7 @@ if (game.lives <= 0) {
         game.player.size.y
     };
 
-    // Coletaveis de energia.
+    // Coletáveis de energia.
     Rectangle currentEnergyPickup =
         game.currentRoom == 3
             ? energyPickupRoom3
@@ -376,12 +379,12 @@ if (game.lives <= 0) {
         energyCollected = true;
     }
 
-    // Interacao com o cofre ou computador.
+    // Interação com o cofre ou computador.
     Rectangle interactionArea;
 
     if (game.currentRoom == 3) {
 
-        // Estacao de computador no canto direito.
+        // Estação de computador no canto direito.
         interactionArea = (Rectangle){
             830, 500, 270, 200
         };
@@ -411,8 +414,7 @@ if (game.lives <= 0) {
 
 void Game_Draw(void)
 {
-
-    //gameover
+    // Game over.
     if (mode == MODE_GAME_OVER) {
         DrawRectangle(0, 0, 1100, 760, (Color){5, 10, 22, 245});
 
@@ -462,7 +464,7 @@ void Game_Draw(void)
         return;
     }
 
-    // Cenas da historia.
+    // Cenas da história.
     if (mode == MODE_MEMORY) {
         Memory_Draw();
         return;
@@ -509,7 +511,7 @@ void Game_Draw(void)
         );
     }
 
-    // Desenho da bateria coletavel.
+    // Desenho da bateria coletável.
     if ((game.currentRoom == 2 || game.currentRoom == 3) &&
         !energyCollected) {
 
@@ -619,7 +621,7 @@ void Game_Draw(void)
         240, 667, 20, batteryColor
     );
 
-    // Mensagem de interacao.
+    // Mensagem de interação.
     if (showMessage && !vaultUnlocked) {
 
         DrawRectangle(
