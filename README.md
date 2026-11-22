@@ -106,3 +106,17 @@ O loop principal fica em `src/main.c`. A lógica da campanha, transições entre
 ## Licença
 
 Nenhuma licença foi definida para este projeto. Para utilizar, modificar ou redistribuir o código, entre em contato com o mantenedor ou adicione uma licença ao repositório.
+
+---
+
+## 🙏 Reflexões e agradecimento
+
+> "Conhece-te a ti mesmo."
+>
+> — Sócrates
+
+> "O livro é um brinquedo feito com letras. Ler é brincar com a gente."
+>
+> — Clóvis de Barros Filho
+
+Agradecemos de coração ao nosso professor pelos ensinamentos, pela paciência e pela dedicação. Cada explicação, orientação e desafio compartilhado nos fez crescer não apenas como desenvolvedores, mas também como pessoas. Muito obrigado por fazer parte desta jornada e por mostrar que aprender pode transformar ideias em realidade. 💙
