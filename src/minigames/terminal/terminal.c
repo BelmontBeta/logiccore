@@ -1,8 +1,9 @@
-
 #include "terminal.h"
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #define PHASE_COUNT 5
 #define STEPS_PER_PHASE 5
@@ -15,6 +16,7 @@ typedef struct {
     const char *expressions[STEPS_PER_PHASE + 1];
     int correctRules[STEPS_PER_PHASE];
     const char *hints[STEPS_PER_PHASE];
+    const char *targets[STEPS_PER_PHASE];
 } Phase;
 
 static const char *ruleNames[RULE_COUNT] = {
@@ -44,6 +46,13 @@ static const Phase phases[PHASE_COUNT] = {
             "Procure o fator comum nas duas partes.",
             "Uma proposicao ou sua negacao resulta em V.",
             "Na conjuncao, X ^ V equivale a X."
+        },
+        {
+            "(r ^ ~r)",
+            "v F",
+            "[(p ^ q) v (p ^ ~q)]",
+            "(q v ~q)",
+            "^ V"
         }
     },
     {
@@ -64,6 +73,13 @@ static const Phase phases[PHASE_COUNT] = {
             "Na disjuncao, X v F equivale a X.",
             "Uma proposicao ou sua negacao resulta em V.",
             "Na conjuncao, X ^ V equivale a X."
+        },
+        {
+            "~(a ^ b)",
+            "(c ^ ~c)",
+            "v F",
+            "(d v ~d)",
+            "^ V"
         }
     },
     {
@@ -84,6 +100,13 @@ static const Phase phases[PHASE_COUNT] = {
             "Na disjuncao, X v F equivale a X.",
             "Uma proposicao ou sua negacao resulta em V.",
             "Na conjuncao, X ^ V equivale a X."
+        },
+        {
+            "[(x ^ y) v (x ^ z)]",
+            "(t ^ ~t)",
+            "v F",
+            "(u v ~u)",
+            "^ V"
         }
     },
     {
@@ -104,6 +127,13 @@ static const Phase phases[PHASE_COUNT] = {
             "Na disjuncao, X v F equivale a X.",
             "Uma proposicao ou sua negacao resulta em V.",
             "Na conjuncao, X ^ V equivale a X."
+        },
+        {
+            "~(m v n)",
+            "(s ^ ~s)",
+            "v F",
+            "(t v ~t)",
+            "^ V"
         }
     },
     {
@@ -124,6 +154,13 @@ static const Phase phases[PHASE_COUNT] = {
             "Na disjuncao, X v F equivale a X.",
             "Uma proposicao ou sua negacao resulta em V.",
             "Na conjuncao, X ^ V equivale a X."
+        },
+        {
+            "[(u ^ v) v (u ^ w)]",
+            "(x ^ ~x)",
+            "v F",
+            "(y v ~y)",
+            "^ V"
         }
     }
 };
@@ -254,6 +291,79 @@ static void DrawFitText(
         fontSize,
         color
     );
+}
+
+/* Desenha a expressao e destaca o trecho que deve ser resolvido */
+
+static void DrawExpression(
+    const char *text,
+    const char *target,
+    int x,
+    int y,
+    int maxWidth,
+    int fontSize
+)
+{
+    while (
+        MeasureText(text, fontSize) > maxWidth &&
+        fontSize > 9
+    ) {
+        fontSize--;
+    }
+
+    if (fontSize < 10)
+        fontSize = 10;
+
+    const char *found = target ? strstr(text, target) : NULL;
+
+    if (found != NULL) {
+        Font font = GetFontDefault();
+        float spacing = (float)(fontSize / 10);
+
+        int beforeLen = (int)(found - text);
+        int targetLen = (int)strlen(target);
+
+        char before[128];
+        char middle[128];
+
+        snprintf(before, sizeof(before), "%.*s", beforeLen, text);
+        snprintf(middle, sizeof(middle), "%.*s", targetLen, found);
+
+        float beforeWidth =
+            MeasureTextEx(font, before, (float)fontSize, spacing).x;
+
+        float middleWidth =
+            MeasureTextEx(font, middle, (float)fontSize, spacing).x;
+
+        float startX = x + beforeWidth;
+
+        if (beforeLen > 0)
+            startX += spacing;
+
+        float pulse = 0.5f + 0.5f * sinf((float)GetTime() * 4.0f);
+
+        Rectangle box = {
+            startX - 5,
+            (float)y - 5,
+            middleWidth + 10,
+            (float)fontSize + 10
+        };
+
+        Color fill = TERMINAL_GOLD;
+        fill.a = (unsigned char)(50 + 40 * pulse);
+
+        DrawRectangleRounded(box, 0.25f, 6, fill);
+
+        DrawRectangleRoundedLinesEx(
+            box,
+            0.25f,
+            6,
+            2.0f,
+            TERMINAL_GOLD
+        );
+    }
+
+    DrawText(text, x, y, fontSize, TERMINAL_TEXT);
 }
 
 /* Elementos visuais */
@@ -766,11 +876,34 @@ void Terminal_Draw(void)
         TERMINAL_BORDER
     );
 
-    DrawFitText(
+    DrawExpression(
         phase->expressions[stepIndex],
-        120, 363, 860, 20,
-        TERMINAL_TEXT
+        phase->targets[stepIndex],
+        120, 363, 860, 20
     );
+
+    /* Legenda do destaque */
+
+    const char *legend = "TRECHO A RESOLVER";
+    int legendWidth = MeasureText(legend, 13);
+    int legendX = 995 - legendWidth;
+
+    DrawRectangleRounded(
+        (Rectangle){(float)(legendX - 22), 324, 14, 14},
+        0.3f,
+        6,
+        (Color){255, 200, 90, 90}
+    );
+
+    DrawRectangleRoundedLinesEx(
+        (Rectangle){(float)(legendX - 22), 324, 14, 14},
+        0.3f,
+        6,
+        1.5f,
+        TERMINAL_GOLD
+    );
+
+    DrawText(legend, legendX, 325, 13, TERMINAL_GOLD);
 
     /* Selecao de regras */
 
