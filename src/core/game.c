@@ -5,6 +5,7 @@
 #include "../scenes/room.h"
 #include "../scenes/menu.h"
 #include "../scenes/memory.h"
+#include "../scenes/options.h"
 
 #include "../minigames/cipher/cipher.h"
 #include "../minigames/doodle/doodle.h"
@@ -43,6 +44,10 @@ static bool energyCollected;
 static bool showMessage;
 static bool vaultUnlocked;
 static bool campaignCompleted;
+
+// Menu de pausa (ESC durante o jogo) e opcoes do menu inicial.
+static bool paused;
+static bool menuOptionsOpen;
 
 static MemoryNextAction memoryNextAction;
 
@@ -211,9 +216,38 @@ static void RestartCampaign(void)
     showMessage = false;
     energyCollected = false;
     campaignCompleted = false;
+    paused = false;
 
     PlayGameplayMusic();
     mode = MODE_EXPLORATION;
+}
+
+// Abandona a partida atual e volta ao menu inicial (progresso zerado).
+static void ReturnToMainMenu(void)
+{
+    // Precisa vir antes de trocar o modo: descarrega o minigame ativo.
+    UnloadCurrentMinigame();
+
+    game.lives = 100;
+    game.currentRoom = 1;
+    game.gameRunning = true;
+
+    game.player.position = (Vector2){100, 442};
+    game.player.currentFrame = 0;
+    game.player.animationTimer = 0;
+    game.player.moving = false;
+    game.player.facingLeft = false;
+
+    vaultUnlocked = false;
+    showMessage = false;
+    energyCollected = false;
+    campaignCompleted = false;
+
+    paused = false;
+    menuOptionsOpen = false;
+
+    PlayMenuMusic();
+    mode = MODE_MENU;
 }
 
 void Game_Init(void)
@@ -228,6 +262,8 @@ void Game_Init(void)
     vaultUnlocked = false;
     energyCollected = false;
     campaignCompleted = false;
+    paused = false;
+    menuOptionsOpen = false;
 
     Room_Init();
     Menu_Init();
@@ -266,10 +302,52 @@ void Game_Update(float dt)
         return;
     }
 
+    // Menu de pausa (ESC): o jogo fica congelado enquanto estiver aberto.
+    if (paused) {
+
+        switch (Options_Update()) {
+
+            case OPTIONS_RESUME:
+                paused = false;
+                break;
+
+            case OPTIONS_MAIN_MENU:
+                ReturnToMainMenu();
+                break;
+
+            default:
+                break;
+        }
+
+        return;
+    }
+
+    if (mode != MODE_MENU && IsKeyPressed(KEY_ESCAPE)) {
+        paused = true;
+        Options_Open(OPTIONS_FROM_PAUSE);
+        return;
+    }
+
     // Menu inicial e reinicio da campanha.
     if (mode == MODE_MENU) {
 
-        if (Menu_Update()) {
+        // Opcoes (resolucao, tela cheia e volume).
+        if (menuOptionsOpen) {
+
+            if (Options_Update() == OPTIONS_CLOSE)
+                menuOptionsOpen = false;
+
+            return;
+        }
+
+        MenuAction action = Menu_Update();
+
+        if (action == MENU_OPTIONS) {
+
+            menuOptionsOpen = true;
+            Options_Open(OPTIONS_FROM_MENU);
+
+        } else if (action == MENU_START) {
 
             game.currentRoom = 1;
             game.lives = 100;
@@ -412,7 +490,7 @@ void Game_Update(float dt)
     }
 }
 
-void Game_Draw(void)
+static void DrawScene(void)
 {
     // Game over.
     if (mode == MODE_GAME_OVER) {
@@ -657,6 +735,15 @@ void Game_Draw(void)
             300, 345, 25, WHITE
         );
     }
+}
+
+void Game_Draw(void)
+{
+    DrawScene();
+
+    // Paineis por cima da cena.
+    if (paused || (mode == MODE_MENU && menuOptionsOpen))
+        Options_Draw();
 }
 
 void Game_Unload(void)

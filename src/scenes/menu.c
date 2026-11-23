@@ -1,4 +1,3 @@
-
 #include "menu.h"
 #include "raylib.h"
 
@@ -10,6 +9,10 @@ static bool menuReady = false;
 
 static Rectangle startButton = {
     390, 570, 320, 75
+};
+
+static Rectangle optionsButton = {
+    390, 662, 320, 60
 };
 
 bool Menu_Init(void)
@@ -27,20 +30,23 @@ bool Menu_Init(void)
     return true;
 }
 
-bool Menu_Update(void)
+MenuAction Menu_Update(void)
 {
     if (!menuReady)
-        return false;
+        return MENU_NONE;
+
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        return MENU_NONE;
 
     Vector2 mouse = GetMousePosition();
 
-    bool hovering = CheckCollisionPointRec(
-        mouse,
-        startButton
-    );
+    if (CheckCollisionPointRec(mouse, startButton))
+        return MENU_START;
 
-    return hovering &&
-           IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
+    if (CheckCollisionPointRec(mouse, optionsButton))
+        return MENU_OPTIONS;
+
+    return MENU_NONE;
 }
 
 void Menu_Draw(void)
@@ -168,6 +174,41 @@ void Menu_Draw(void)
         (SCREEN_WIDTH - buttonTextWidth) / 2,
         592,
         28,
+        WHITE
+    );
+
+    // Botao de opcoes (resolucao, tela cheia e volume).
+    bool optionsHovering = CheckCollisionPointRec(
+        mouse,
+        optionsButton
+    );
+
+    DrawRectangleRounded(
+        optionsButton,
+        0.2f,
+        8,
+        optionsHovering
+            ? (Color){0, 145, 205, 250}
+            : (Color){10, 55, 95, 235}
+    );
+
+    DrawRectangleRoundedLinesEx(
+        optionsButton,
+        0.2f,
+        8,
+        3,
+        optionsHovering ? (Color){100, 235, 255, 255} : SKYBLUE
+    );
+
+    const char *optionsText = "OPCOES";
+
+    int optionsTextWidth = MeasureText(optionsText, 24);
+
+    DrawText(
+        optionsText,
+        (SCREEN_WIDTH - optionsTextWidth) / 2,
+        (int)(optionsButton.y + (optionsButton.height - 24) / 2),
+        24,
         WHITE
     );
 }

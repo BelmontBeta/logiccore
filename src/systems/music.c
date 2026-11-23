@@ -5,10 +5,12 @@
 static Music menuMusic;
 static Music gameplayMusic;
 static Music *currentMusic = NULL;
+static float masterVolume = 1.0f;
 
 void InitGameMusic(void)
 {
     InitAudioDevice();
+    SetMasterVolume(masterVolume);
 
     menuMusic = LoadMusicStream("assets/audio/menu.ogg");
     gameplayMusic = LoadMusicStream("assets/audio/gameplay.ogg");
@@ -61,4 +63,21 @@ void CloseGameMusic(void)
     CloseAudioDevice();
 
     currentMusic = NULL;
+}
+
+void SetGameVolume(float volume)
+{
+    if (volume < 0.0f) volume = 0.0f;
+    if (volume > 1.0f) volume = 1.0f;
+
+    masterVolume = volume;
+
+    // Volume geral: vale para musicas e qualquer som futuro.
+    if (IsAudioDeviceReady())
+        SetMasterVolume(masterVolume);
+}
+
+float GetGameVolume(void)
+{
+    return masterVolume;
 }
