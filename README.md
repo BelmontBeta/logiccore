@@ -2,7 +2,7 @@
 
 **O GRANDE ASSALTO LOGICO**
 
-LOGIC CORE é um jogo de aventura e lógica desenvolvido em C com [raylib](https://www.raylib.com/). O jogador controla BIT, explora três salas e resolve desafios para recuperar a verdade e impedir o apagamento do núcleo lógico.
+LOGIC CORE é um jogo de aventura e lógica desenvolvido em C com [raylib](https://www.raylib.com/). O jogador controla BIT, explora três salas e resolve desafios para recuperar a verdade e impedir o colapso do sistema.
 
 ## Sobre o jogo
 
@@ -105,7 +105,7 @@ O loop principal fica em `src/main.c`. A lógica da campanha, transições entre
 
 ## Licença
 
-Nenhuma licença foi definida para este projeto. Para utilizar, modificar ou redistribuir o código, entre em contato com o mantenedor ou adicione uma licença ao repositório.
+Este projeto é distribuído sob a [licença MIT](LICENSE).
 
 ---
 
@@ -119,4 +119,4 @@ Nenhuma licença foi definida para este projeto. Para utilizar, modificar ou red
 >
 > — Clóvis de Barros Filho
 
-Agradecemos de coração ao nosso professor pelos ensinamentos, pela paciência e pela dedicação. Cada explicação, orientação e desafio compartilhado nos fez crescer não apenas como desenvolvedores, mas também como pessoas. Muito obrigado por fazer parte desta jornada e por mostrar que aprender pode transformar ideias em realidade. 💙
+Agradecemos de coração ao nosso professor pelos ensinamentos, pela paciência e pela dedicação. Cada explicação, orientação e desafio compartilhado nos fez crescer não apenas como desenvolvedores, mas também como pessoas.
